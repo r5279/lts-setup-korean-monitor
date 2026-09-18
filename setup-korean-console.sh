@@ -77,7 +77,14 @@ if [[ -z $(apt-cache policy kmscon | awk '/Candidate:/ && $2 != "(none)" {print 
   die "kmscon 패키지를 찾을 수 없습니다. universe 저장소를 켜고 다시 실행하세요:" \
       "  sudo add-apt-repository universe"
 fi
-apt-get install -y kmscon fonts-noto-cjk fontconfig
+# 자동 업데이트가 dpkg 잠금을 쓰고 있으면 최대 10분 기다린다.
+# 설치 자체를 중단하는 timeout 대신 APT의 잠금 대기 옵션을 사용한다.
+echo "패키지 설치: 다른 업데이트가 실행 중이면 잠금 해제를 최대 10분 기다립니다."
+if ! apt-get -o DPkg::Lock::Timeout=600 install -y kmscon fonts-noto-cjk fontconfig; then
+  die "패키지 설치에 실패했습니다. 위의 apt 오류를 확인하세요." \
+      "패키지 잠금 오류라면 자동 업데이트가 끝난 뒤 다시 실행하세요:" \
+      "  sudo bash $0"
+fi
 
 [[ -n $(fc-list "$FONT_NAME" family) ]] || die "글꼴 '$FONT_NAME'을 찾을 수 없습니다."
 
